@@ -1,0 +1,42 @@
+﻿apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: autoscaler-plugin
+  labels:
+    app: autoscaler-plugin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: autoscaler-plugin
+  template:
+    metadata:
+      labels:
+        app: autoscaler-plugin
+    spec:
+      containers:
+      - name: autoscaler-plugin
+        image: docker.io/library/autoscaler-plugin:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8001
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: autoscaler-plugin-svc
+spec:
+  selector:
+    app: autoscaler-plugin
+  ports:
+  - protocol: TCP
+    port: 8001
+    targetPort: 8001
+  type: NodePort
