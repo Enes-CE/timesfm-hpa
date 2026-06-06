@@ -14,7 +14,7 @@ TimesFM-HPA is a Kubernetes predictive autoscaler that uses Google's TimesFM tim
 
 - **Zero-shot deployment** — uses pretrained TimesFM-2.5-200M, no training required
 - **Drop-in plugin** — works alongside any existing Kubernetes Deployment
-- **Production-ready** — startupProbe, readinessProbe, Prometheus integration, Helm chart
+- **Production-grade primitives** — startupProbe, readinessProbe, Prometheus integration, validated Helm chart (tested on minikube)
 - **Open standard** — exposes a `/predict` HTTP endpoint, model-agnostic backend
 
 ## Experimental Results
