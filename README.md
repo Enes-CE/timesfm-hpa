@@ -6,6 +6,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-1.28+-326CE5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![TimesFM](https://img.shields.io/badge/model-TimesFM--2.5--200M-orange.svg)](https://github.com/google-research/timesfm)
+[![Release](https://img.shields.io/github/v/release/Enes-CE/timesfm-hpa)](https://github.com/Enes-CE/timesfm-hpa/releases)
 [![Status: Research Preview](https://img.shields.io/badge/status-research_preview-yellow.svg)]()
 
 TimesFM-HPA is a Kubernetes predictive autoscaler that uses Google's TimesFM time-series foundation model to forecast workload patterns and proactively scale pods *before* demand spikes occur. Unlike traditional ML-based autoscalers, TimesFM-HPA requires **no per-workload training data** and operates in zero-shot mode out of the box.
