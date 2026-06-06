@@ -51,21 +51,24 @@ The controller polls Prometheus every 60 seconds, requests a 5-step forecast fro
 - Docker
 - Python 3.12+
 
-### 1. Build the Inference Service
+### 1. Pull the Container Image
+
+The pre-built image is available on Docker Hub:
 
 ```bash
-# Download the TimesFM model (one-time, ~880 MB)
-mkdir -p models
-huggingface-cli download google/timesfm-2.5-200m-pytorch \
-  --local-dir models/timesfm
-
-# Build the container image
-docker build -t autoscaler-plugin:v2 .
+docker pull eenesulusoy/timesfm-hpa:v0.1.0
 ```
+
+The TimesFM-2.5-200M model (~880 MB) is downloaded automatically from Hugging Face Hub on first pod startup. Override with `HF_MODEL_ID` and `MODEL_PATH` environment variables if needed.
 
 If using minikube:
 ```bash
-minikube image load autoscaler-plugin:v2
+minikube image load eenesulusoy/timesfm-hpa:v0.1.0
+```
+
+To build from source instead:
+```bash
+docker build -t eenesulusoy/timesfm-hpa:v0.1.0 .
 ```
 
 ### 2. Deploy to Kubernetes
