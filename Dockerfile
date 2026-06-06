@@ -14,6 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Kaynak kodu kopyala
 COPY src/ ./src/
+COPY models/ ./models/
 
 # Port
 EXPOSE 8001

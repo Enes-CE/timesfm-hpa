@@ -1,0 +1,21 @@
+apiVersion: v2
+name: timesfm-hpa
+description: A Zero-Shot Foundation Model Based Predictive Autoscaler Plugin for Kubernetes
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - autoscaling
+  - kubernetes
+  - timesfm
+  - predictive
+  - foundation-model
+  - time-series
+home: https://github.com/Enes-CE/timesfm-hpa
+sources:
+  - https://github.com/Enes-CE/timesfm-hpa
+maintainers:
+  - name: İbrahim Enes Ulusoy
+    email: c.enes.eng@gmail.com
+  - name: Baran Kaynak
+    email: kaynak@sakarya.edu.tr

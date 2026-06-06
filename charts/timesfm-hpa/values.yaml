@@ -1,0 +1,50 @@
+# Default values for timesfm-hpa.
+
+image:
+  repository: autoscaler-plugin
+  tag: v2
+  pullPolicy: IfNotPresent
+
+# Inference service replica bounds
+service:
+  replicas: 1
+  port: 8001
+  type: NodePort
+
+# Target Deployment to be autoscaled
+targetDeployment:
+  name: autoscaler-plugin
+  namespace: default
+
+# Predictive controller settings
+controller:
+  enabled: true
+  loopIntervalSeconds: 60
+  forecastHorizon: 5
+  contextLength: 128
+  prometheusUrl: http://prometheus-kube-prometheus-prometheus.monitoring.svc:9090
+  metricWindowMinutes: 30
+  targetUtilization: 0.5
+  minReplicas: 1
+  maxReplicas: 2
+
+# Resource requests and limits for the inference service
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "500m"
+  limits:
+    memory: "2Gi"
+    cpu: "1000m"
+
+# Startup and readiness probes
+probes:
+  startup:
+    httpPath: /health
+    failureThreshold: 30
+    periodSeconds: 5
+  readiness:
+    httpPath: /health
+    periodSeconds: 5
+    failureThreshold: 3
+    successThreshold: 1

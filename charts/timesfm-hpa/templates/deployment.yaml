@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.targetDeployment.name }}
+  namespace: {{ .Values.targetDeployment.namespace }}
+  labels:
+    app: {{ .Values.targetDeployment.name }}
+spec:
+  replicas: {{ .Values.service.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.targetDeployment.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.targetDeployment.name }}
+    spec:
+      containers:
+        - name: {{ .Values.targetDeployment.name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.startup.httpPath }}
+              port: {{ .Values.service.port }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness.httpPath }}
+              port: {{ .Values.service.port }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            successThreshold: {{ .Values.probes.readiness.successThreshold }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          resources:
+            requests:
+              memory: {{ .Values.resources.requests.memory | quote }}
+              cpu: {{ .Values.resources.requests.cpu | quote }}
+            limits:
+              memory: {{ .Values.resources.limits.memory | quote }}
+              cpu: {{ .Values.resources.limits.cpu | quote }}

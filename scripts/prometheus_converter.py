@@ -45,23 +45,21 @@ def prepare_timesfm_input(values: np.ndarray, context_len: int = 128) -> np.ndar
 
 def scale_to_pod_count(forecast: list, min_pods: int = 1, max_pods: int = 10) -> list:
     """
-    TimesFM tahminini pod sayısına dönüştürür.
-    forecast değerlerini [min_pods, max_pods] aralığına normalize eder.
+    TimesFM tahminini pod sayisina donusturur.
+    Hedef CPU utilization (%50, HPA ile ayni) esigi kullanir.
+    Forecast = bir podun CPU usage'i (core fraction). 
+    Eger forecast.max() > 0.5 ise, yuku karsilamak icin pod sayisini artirir.
+    Formul: target_pods = ceil(forecast.max() / target_utilization)
     """
+    import math
     forecast_array = np.array(forecast)
-    
-    f_min = forecast_array.min()
-    f_max = forecast_array.max()
-    
-    if f_max == f_min:
-        return [min_pods] * len(forecast)
-    
-    normalized = (forecast_array - f_min) / (f_max - f_min)
-    pod_counts = (normalized * (max_pods - min_pods) + min_pods).astype(int)
-    pod_counts = np.clip(pod_counts, min_pods, max_pods)
-    
-    return pod_counts.tolist()
-
+    target_utilization = 0.5  # HPA ile ayni: %50 CPU hedefi
+    # Forecast'in pikine bakarak gereken pod sayisini hesapla
+    peak_demand = float(forecast_array.max())
+    required_pods = max(min_pods, math.ceil(peak_demand / target_utilization))
+    required_pods = min(required_pods, max_pods)
+    # Tum horizon icin ayni karari uygula (tepe-yuk savunmasi)
+    return [required_pods] * len(forecast)
 
 if __name__ == "__main__":
     print("Prometheus veri dönüştürücü test ediliyor...")

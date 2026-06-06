@@ -12,14 +12,14 @@ DEPLOYMENT_NAME = "autoscaler-plugin"
 NAMESPACE = "default"
 LOOP_INTERVAL = 60
 MIN_PODS = 1
-MAX_PODS = 5
+MAX_PODS = 2
 
 def get_cpu_metrics(retries=3) -> np.ndarray:
     """Prometheus'tan CPU metriklerini ceker, basarisiz olursa tekrar dener."""
     end = datetime.now()
     start = end - timedelta(minutes=30)
     params = {
-        "query": "rate(container_cpu_usage_seconds_total{namespace='default'}[1m])",
+        "query": "avg(rate(container_cpu_usage_seconds_total{namespace='default', pod=~'autoscaler-plugin-.*'}[1m]))",
         "start": start.timestamp(),
         "end": end.timestamp(),
         "step": "15s"

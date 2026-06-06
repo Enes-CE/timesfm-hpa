@@ -16,10 +16,23 @@ spec:
     spec:
       containers:
       - name: autoscaler-plugin
-        image: docker.io/library/autoscaler-plugin:v1
+        image: docker.io/library/autoscaler-plugin:v2
         imagePullPolicy: Never
         ports:
         - containerPort: 8001
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          failureThreshold: 30
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          periodSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
         resources:
           requests:
             memory: "512Mi"
