@@ -1,4 +1,4 @@
- # TimesFM-HPA
+# TimesFM-HPA
 
 **A Zero-Shot Foundation Model Based Predictive Autoscaler Plugin for Kubernetes**
 
@@ -6,6 +6,7 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Kubernetes](https://img.shields.io/badge/kubernetes-1.28+-326CE5.svg?logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![TimesFM](https://img.shields.io/badge/model-TimesFM--2.5--200M-orange.svg)](https://github.com/google-research/timesfm)
+[![Docker Image](https://img.shields.io/docker/v/eenesulusoy/timesfm-hpa?label=docker&logo=docker)](https://hub.docker.com/r/eenesulusoy/timesfm-hpa)
 [![Release](https://img.shields.io/github/v/release/Enes-CE/timesfm-hpa)](https://github.com/Enes-CE/timesfm-hpa/releases)
 [![Status: Research Preview](https://img.shields.io/badge/status-research_preview-yellow.svg)]()
 
@@ -15,6 +16,7 @@ TimesFM-HPA is a Kubernetes predictive autoscaler that uses Google's TimesFM tim
 
 - **Zero-shot deployment** — uses pretrained TimesFM-2.5-200M, no training required
 - **Drop-in plugin** — works alongside any existing Kubernetes Deployment
+- **Pre-built container image** — available on Docker Hub, one-command pull
 - **Production-grade primitives** — startupProbe, readinessProbe, Prometheus integration, validated Helm chart (tested on minikube)
 - **Open standard** — exposes a `/predict` HTTP endpoint, model-agnostic backend
 
@@ -33,14 +35,11 @@ Sustained throughput increased by 49–151%. Full results, statistics, and figur
 ## Architecture
 
 The controller polls Prometheus every 60 seconds, requests a 5-step forecast from the TimesFM inference service, and proactively scales the target Deployment using `kubectl scale`.
-
-```
-   Locust Client ──▶ Service ──▶ Pod 1..N (TimesFM)
-                                      │
-                                      ▼
-   K8s API ◀── TimesFM Controller ◀── Prometheus
-      scale         forecast            metrics
-```
+Locust Client ──▶ Service ──▶ Pod 1..N (TimesFM)
+│
+▼
+K8s API ◀── TimesFM Controller ◀── Prometheus
+scale         forecast            metrics
 
 ## Quick Start
 
@@ -48,37 +47,49 @@ The controller polls Prometheus every 60 seconds, requests a 5-step forecast fro
 
 - Kubernetes cluster (tested on minikube 1.38+ with 5 GB memory)
 - Prometheus + Grafana stack (kube-prometheus-stack)
-- Docker
-- Python 3.12+
+- Helm 3+
+- Python 3.12+ (for the controller)
 
-### 1. Pull the Container Image
-
-The pre-built image is available on Docker Hub:
+### Install via Helm (Recommended)
 
 ```bash
-docker pull eenesulusoy/timesfm-hpa:v0.1.0
+git clone https://github.com/Enes-CE/timesfm-hpa.git
+cd timesfm-hpa
+
+helm install timesfm-hpa charts/timesfm-hpa \
+  --set image.repository=eenesulusoy/timesfm-hpa \
+  --set image.tag=v0.1.0 \
+  --set controller.minReplicas=1 \
+  --set controller.maxReplicas=10
 ```
 
-The TimesFM-2.5-200M model (~880 MB) is downloaded automatically from Hugging Face Hub on first pod startup. Override with `HF_MODEL_ID` and `MODEL_PATH` environment variables if needed.
+The pre-built image is pulled automatically from Docker Hub. The TimesFM-2.5-200M model (~880 MB) is downloaded from Hugging Face Hub on first pod startup.
 
-If using minikube:
+If using minikube, you may want to pre-load the image to avoid pull delays:
+
 ```bash
 minikube image load eenesulusoy/timesfm-hpa:v0.1.0
 ```
 
-To build from source instead:
-```bash
-docker build -t eenesulusoy/timesfm-hpa:v0.1.0 .
-```
+### Manual Installation (Alternative)
 
-### 2. Deploy to Kubernetes
+If you prefer raw Kubernetes manifests:
 
 ```bash
+docker pull eenesulusoy/timesfm-hpa:v0.1.0
 kubectl apply -f k8s/deployment.yaml
 kubectl wait --for=condition=Ready pod -l app=autoscaler-plugin --timeout=180s
 ```
 
-### 3. Run the Predictive Controller
+To build from source instead of using the pre-built image:
+
+```bash
+docker build -t eenesulusoy/timesfm-hpa:v0.1.0 .
+```
+
+### Run the Predictive Controller
+
+The controller runs as a separate process (outside the cluster, in this preview).
 
 ```bash
 # Port-forward Prometheus and the inference service
@@ -96,12 +107,34 @@ The controller will:
 3. Compute target replicas: `r_target = clamp(⌈û_peak / 0.5⌉, 1, r_max)`
 4. Call `kubectl scale` to adjust the Deployment
 
-### 4. Compare Against HPA (Reactive)
+### Compare Against Reactive HPA
+
+To switch to reactive mode for baseline comparison:
 
 ```bash
-# Stop the controller, apply HPA
+# Stop the controller, then apply HPA
 kubectl apply -f k8s/hpa.yaml
 ```
+
+### Uninstall
+
+```bash
+helm uninstall timesfm-hpa
+```
+
+## Configuration
+
+All parameters are configurable via Helm `--set` flags or a custom `values.yaml`. See [charts/timesfm-hpa/README.md](charts/timesfm-hpa/README.md) for the full reference. Key parameters:
+
+| Parameter                        | Description                          | Default      |
+|----------------------------------|--------------------------------------|--------------|
+| `image.repository`               | Container image                      | `eenesulusoy/timesfm-hpa` |
+| `image.tag`                      | Image version                        | `v0.1.0`     |
+| `controller.minReplicas`         | Minimum replica count                | `1`          |
+| `controller.maxReplicas`         | Maximum replica count                | `2`          |
+| `controller.loopIntervalSeconds` | Control loop interval                | `60`         |
+| `controller.targetUtilization`   | Target CPU utilization               | `0.5`        |
+| `controller.prometheusUrl`       | Prometheus endpoint                  | (in-cluster) |
 
 ## Reproducing the Experiments
 
@@ -123,8 +156,6 @@ python experiments/visualize_results.py
 Raw results from our run are checked in at `experiments/real_results/real_results.json`.
 
 ## Project Structure
-
-```
 .
 ├── src/                          # Inference service + controller
 │   ├── main.py                   # FastAPI service (/predict, /health, /metrics)
@@ -139,7 +170,6 @@ Raw results from our run are checked in at `experiments/real_results/real_result
 ├── charts/timesfm-hpa/           # Helm chart
 ├── Dockerfile
 └── requirements.txt
-```
 
 ## Citation
 
